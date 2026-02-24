@@ -31,11 +31,15 @@ def create_vectorstore(documents: List[Document]):
 
     embedding_model = get_embedding_model()
     index = initialize_pinecone_index(
-        dimension=3072
-    )  # gemini embedding model used returns vectors of length 3072
+        dimension=384
+    )  # hugging face embedding model used returns vectors of length 384
 
     vectorstore = PineconeVectorStore(index=index, embedding=embedding_model)
 
+    print(f"Indexing {len(documents)} chunks...")
+
     vectorstore.add_documents(documents=documents)
+
+    print("Indexing completed!")
 
     return vectorstore

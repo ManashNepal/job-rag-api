@@ -1,10 +1,7 @@
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from src.config import settings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 
-def get_embedding_model() -> GoogleGenerativeAIEmbeddings:
+def get_embedding_model():
     """Initialize and return gemini embedding model."""
 
-    return GoogleGenerativeAIEmbeddings(
-        model="models/gemini-embedding-001", google_api_key=settings.google_api_key
-    )
+    return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")

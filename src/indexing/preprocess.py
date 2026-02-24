@@ -17,6 +17,12 @@ def clean_html(raw_html: str) -> str:
     return " ".join(text.split())
 
 
+def safe_value(value):
+    if pd.isna(value):
+        return ""
+    return value
+
+
 def build_document(row: pd.Series) -> Document:
     """Build formatted documents for each row."""
 
@@ -34,13 +40,13 @@ def build_document(row: pd.Series) -> Document:
     )
 
     metadata = {
-        "id": row["ID"],
-        "title": row["Job Title"],
-        "company": row["Company Name"],
-        "location": row["Job Location"],
-        "level": row["Job Level"],
-        "category": row["Job Category"],
-        "publication_date": row["Publication Date"],
+        "id": safe_value(row["ID"]),
+        "title": safe_value(row["Job Title"]),
+        "company": safe_value(row["Company Name"]),
+        "location": safe_value(row["Job Location"]),
+        "level": safe_value(row["Job Level"]),
+        "category": safe_value(row["Job Category"]),
+        "publication_date": safe_value(row["Publication Date"]),
     }
 
     return Document(page_content=formatted_text, metadata=metadata)
