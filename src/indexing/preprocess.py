@@ -12,7 +12,10 @@ def clean_html(raw_html: str) -> str:
         return ""
 
     soup = BeautifulSoup(raw_html, "html.parser")
-    text = soup.get_text(separator="\n")
+    for tag in soup(["script", "style"]):
+        tag.decompose()
+
+    text = soup.get_text(separator=" ")
 
     return " ".join(text.split())
 
@@ -20,32 +23,43 @@ def clean_html(raw_html: str) -> str:
 def safe_value(value):
     if pd.isna(value):
         return ""
-    return value
+    return str(value).strip()
 
 
 def build_document(row: pd.Series) -> Document:
     """Build formatted documents for each row."""
 
     job_description = clean_html(row["Job Description"])
-    tags = row["Tags"] if not pd.isna(row["Tags"]) else ""
+    # Avoid hallucinated response
+    if len(job_description.strip()) < 50:
+        job_description = "No detailed description provided."
 
-    formatted_text = (
-        f"Job Title: {row['Job Title']}\n"
-        f"Company: {row['Company Name']}\n"
-        f"Location: {row['Job Location']}\n"
-        f"Level: {row['Job Level']}\n"
-        f"Category: {row['Job Category']}\n"
-        f"Tags: {tags}\n\n"
-        f"Description:\n{job_description}"
-    )
+    title = safe_value(row["Job Title"])
+    company = safe_value(row["Company Name"])
+    location = safe_value(row["Job Location"])
+    level = safe_value(row["Job Level"])
+    category = safe_value(row["Job Category"])
+
+    formatted_text = f"""
+---
+Job Title: {title}
+Company: {company}
+Location: {location}
+Level: {level}
+Category: {category}
+
+Description:
+{job_description}
+---
+    """
 
     metadata = {
         "id": safe_value(row["ID"]),
-        "title": safe_value(row["Job Title"]),
-        "company": safe_value(row["Company Name"]),
-        "location": safe_value(row["Job Location"]),
-        "level": safe_value(row["Job Level"]),
-        "category": safe_value(row["Job Category"]),
+        "title": title,
+        "company": company,
+        "location": location,
+        "level": level,
+        "category": category,
         "publication_date": safe_value(row["Publication Date"]),
     }
 

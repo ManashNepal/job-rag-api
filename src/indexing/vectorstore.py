@@ -36,10 +36,24 @@ def create_vectorstore(documents: List[Document]):
 
     vectorstore = PineconeVectorStore(index=index, embedding=embedding_model)
 
-    print(f"Indexing {len(documents)} chunks...")
+    print(f"Indexing {len(documents)} documents...")
 
     vectorstore.add_documents(documents=documents)
 
     print("Indexing completed!")
 
     return vectorstore
+
+
+def get_vectorstore():
+    """Return existing pinecone vectorstore for retrieval."""
+
+    pc = Pinecone(api_key=settings.pinecone_api_key)
+    index = pc.Index(settings.pinecone_index_name)
+
+    embedding_model = get_embedding_model()
+
+    return PineconeVectorStore(
+        index=index,
+        embedding=embedding_model,
+    )
