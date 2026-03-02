@@ -5,6 +5,7 @@ import time
 from src.config import settings
 from src.rag.schemas import JobSearchResponse
 from src.rag.retriever import HybridRetriever
+from src.rag.reranker import Reranker
 
 
 DEFAULT_TOP_K = 3
@@ -15,7 +16,8 @@ class RAGService:
 
     def __init__(self):
         """Initialize vector store, retriever, LLM, and prompt template."""
-        self.retriever = HybridRetriever(top_k=DEFAULT_TOP_K)
+        self.retriever = HybridRetriever(top_k=8)
+        self.reranker = Reranker(top_k=DEFAULT_TOP_K)
 
         base_llm = ChatGroq(
             model="llama-3.3-70b-versatile",
@@ -68,6 +70,8 @@ User Query:
         """
         start = time.time()
         docs = self.retriever.search(user_query)
+        # Rerank documents
+        docs = self.reranker.rerank(user_query, docs)
         retrieval_time = time.time() - start
 
         context = self.build_context(docs)
