@@ -44,8 +44,18 @@ Rules:
 - Do NOT invent information
 - If nothing relevant, return an empty list
 - Order results by relevance
-- Focus summaries on job responsibilities and required skills
-- Avoid generic company descriptions or marketing text
+
+Summary Guidelines:
+- Write a clear and informative summary describing the overall role
+- Start with a descriptive phrase such as:
+  "The role involves", "This position focuses on", "The job centers on",
+  "The position involves", or a similar natural variation
+- Use only ONE opening phrase and avoid repeating similar phrases
+- Include the main responsibilities and purpose of the job
+- Focus on what the candidate will do and the type of work involved
+- If company information appears first, prioritize role details instead
+- Avoid generic company descriptions, workplace environment details, or marketing text
+- Keep the summary concise (2-3 sentences maximum)
 
 Context:
 {context}
@@ -56,6 +66,10 @@ User Query:
         )
 
     def query(self, user_query: str):
+        """
+        Execute the RAG pipeline:
+        retrieve relevant jobs, build context, invoke LLM, and return results.
+        """
         start = time.time()
         docs = self.retriever.invoke(user_query)
         retrieval_time = time.time() - start
@@ -80,6 +94,7 @@ User Query:
         return response
 
     def build_context(self, docs):
+        """Construct a compact text context from retrieved documents to send to the LLM."""
         context_parts = []
 
         if not docs:
@@ -99,7 +114,7 @@ User Query:
             else:
                 description = content
 
-            description = description[:400]  # shorter gives faster response
+            description = description[:600]  # shorter gives faster response
 
             text = f"""
 ---
