@@ -1,12 +1,13 @@
 from sentence_transformers import CrossEncoder
+from src.config import settings
 
 
 class Reranker:
     """Simple cross-encoder reranker."""
 
-    def __init__(self, top_k: int = 3):
+    def __init__(self, top_k: int):
         self.top_k = top_k
-        self.model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        self.model = CrossEncoder(settings.reranker_model)
 
     def rerank(self, query: str, documents):
         if not documents:

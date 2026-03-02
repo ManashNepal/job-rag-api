@@ -1,6 +1,7 @@
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 import time
+import logging
 
 from src.config import settings
 from src.rag.schemas import JobSearchResponse
@@ -8,19 +9,16 @@ from src.rag.retriever import HybridRetriever
 from src.rag.reranker import Reranker
 
 
-DEFAULT_TOP_K = 3
-
-
 class RAGService:
     """Service class implementing the RAG pipeline for job search."""
 
     def __init__(self):
         """Initialize vector store, retriever, LLM, and prompt template."""
-        self.retriever = HybridRetriever(top_k=8)
-        self.reranker = Reranker(top_k=DEFAULT_TOP_K)
+        self.retriever = HybridRetriever(top_k=settings.retriever_top_k)
+        self.reranker = Reranker(top_k=settings.reranker_top_k)
 
         base_llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model=settings.groq_model,
             temperature=0,
             api_key=settings.groq_api_key,
         )
@@ -87,8 +85,10 @@ User Query:
 
         total_time = time.time() - start
 
-        print(
-            f"Retrieval: {retrieval_time:.2f}s | LLM: {llm_time:.2f}s | Total: {total_time:.2f}s"
+        logging.info(
+            f"Retrieval: {retrieval_time:.2f}s | "
+            f"LLM: {llm_time:.2f}s | "
+            f"Total: {total_time:.2f}s"
         )
 
         return response

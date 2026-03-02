@@ -1,7 +1,8 @@
 from langchain_huggingface import HuggingFaceEmbeddings
+from src.config import settings
 
 
 def get_embedding_model():
     """Initialize and return hugging face embedding model."""
 
-    return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    return HuggingFaceEmbeddings(model_name=settings.hf_embedding_model)

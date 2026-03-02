@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from pinecone import Pinecone, ServerlessSpec
 from langchain_classic.schema import Document
@@ -34,10 +35,10 @@ def create_vectorstore(documents: List[Document]):
 
     embedding_model = get_embedding_model()
     index = initialize_pinecone_index(
-        dimension=384,
+        dimension=settings.pinecone_dimension,
     )  # hugging face embedding model used returns vectors of length 384
 
-    print(f"Indexing {len(documents)} documents...")
+    logging.info(f"Indexing {len(documents)} documents...")
 
     # Prepare corpus for BM25
     corpus = [doc.page_content for doc in documents]
@@ -73,5 +74,5 @@ def create_vectorstore(documents: List[Document]):
         batch = vectors[i : i + batch_size]
         index.upsert(vectors=batch)
 
-    print("Hybrid indexing completed!")
+    logging.info("Hybrid indexing completed!")
     return index
