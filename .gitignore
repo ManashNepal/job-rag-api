@@ -7,3 +7,5 @@ uv.lock
 data/
 
 .env
+
+bm25.pkl

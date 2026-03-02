@@ -3,8 +3,8 @@ from langchain_core.prompts import ChatPromptTemplate
 import time
 
 from src.config import settings
-from src.indexing.vectorstore import get_vectorstore
 from src.rag.schemas import JobSearchResponse
+from src.rag.retriever import HybridRetriever
 
 
 DEFAULT_TOP_K = 3
@@ -15,11 +15,7 @@ class RAGService:
 
     def __init__(self):
         """Initialize vector store, retriever, LLM, and prompt template."""
-        self.vectorstore = get_vectorstore()
-
-        self.retriever = self.vectorstore.as_retriever(
-            search_kwargs={"k": DEFAULT_TOP_K}
-        )
+        self.retriever = HybridRetriever(top_k=DEFAULT_TOP_K)
 
         base_llm = ChatGroq(
             model="llama-3.3-70b-versatile",
@@ -71,7 +67,7 @@ User Query:
         retrieve relevant jobs, build context, invoke LLM, and return results.
         """
         start = time.time()
-        docs = self.retriever.invoke(user_query)
+        docs = self.retriever.search(user_query)
         retrieval_time = time.time() - start
 
         context = self.build_context(docs)
