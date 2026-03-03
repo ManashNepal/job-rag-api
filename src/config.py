@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # API keys
     groq_api_key: str = Field(..., validation_alias="GROQ_API_KEY")
     pinecone_api_key: str = Field(..., validation_alias="PINECONE_API_KEY")
+    hf_token: str | None = None
     # Pinecone
     pinecone_index_name: str = "job-rag-index"
     pinecone_dimension: int = 384
