@@ -56,8 +56,8 @@ docker pull manashnepal/job-rag-api:latest
 Create a file named `.env`:
 
 ```bash
-GROQ_API_KEY=your_groq_key
-PINECONE_API_KEY=your_pinecone_key
+GROQ_API_KEY=your_groq_api_key
+PINECONE_API_KEY=your_pinecone_api_key
 HF_TOKEN=your_hf_token
 ```
 
