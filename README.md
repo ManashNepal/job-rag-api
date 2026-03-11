@@ -35,6 +35,43 @@ The system separates retrieval, reranking and generation into clear stages to ke
 
 ---
 
+## Data Indexing (Pinecone Setup)
+
+Before running the API, the job dataset must be indexed and stored in Pinecone.
+This project includes an indexing script that processes the dataset, generates embeddings, and uploads hybrid vectors to the Pinecone vector database.
+
+### Dataset
+
+The dataset used for retrieval should be stored at: `data/LF_Jobs.csv`
+
+### Run the Indexing Script
+
+To populate the Pinecone vector database, run the following command:
+
+```bash
+python run_indexing.py
+```
+
+The indexing script performs the following steps:
+
+1. Loads job data from data/LF_Jobs.csv
+2. Preprocesses and prepares the documents
+3. Generates:
+
+- Dense embeddings using the Sentence Transformer model
+- Sparse vectors using BM25 encoding
+
+4. Uploads the hybrid vectors to the configured Pinecone index
+
+The script internally uses:
+
+- `load_and_prepare_data()` to load and preprocess the dataset
+- `create_vectorstore()` to generate embeddings and store vectors in Pinecone
+
+This indexing process only needs to be executed once, unless the dataset changes.
+
+---
+
 ## Setup and Installation
 
 ### Prerequisites
