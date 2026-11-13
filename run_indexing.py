@@ -13,7 +13,7 @@ logging.basicConfig(
 def main():
     start = time.time()
     logging.info("Loading documents...")
-    documents = load_and_prepare_data(file_path="data/LF_Jobs.csv")
+    documents = load_and_prepare_data(file_path="data/linkedin_job_postings.csv")
     logging.info(f"Loaded {len(documents)} documents.")
 
     logging.info("Storing in pinecone...")

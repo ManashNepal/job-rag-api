@@ -1,78 +1,120 @@
+import logging
+import re
+import uuid
+
 import pandas as pd
-from bs4 import BeautifulSoup
-from typing import List
-from langchain_classic.schema import Document
+from langchain_core.documents import Document
+
+logger = logging.getLogger(__name__)
+
+EXPECTED_COLUMNS = [
+    "job_title",
+    "company",
+    "job_location",
+    "job_link",
+    "search_country",
+    "job level",
+    "job_type",
+    "job_summary",
+    "job_skills",
+]
 
 
-def clean_html(raw_html: str) -> str:
-    """Remove HTML tags and return clean text."""
-
-    # Check if description is empty
-    if pd.isna(raw_html):
-        return ""
-
-    soup = BeautifulSoup(raw_html, "html.parser")
-    for tag in soup(["script", "style"]):
-        tag.decompose()
-
-    text = soup.get_text(separator=" ")
-
-    return " ".join(text.split())
-
-
-def safe_value(value):
+# Field cleaning
+def clean_text(value) -> str:
+    """Strip a value and collapse whitespace, keeping paragraph breaks."""
     if pd.isna(value):
         return ""
-    return str(value).strip()
+    text = str(value).replace("\r\n", "\n")
+    text = re.sub(r"[ \t\u00a0]+", " ", text)
+    text = re.sub(r" ?\n ?", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
+def parse_skills(raw) -> list[str]:
+    """Split a comma-separated skills string into a de-duplicated list."""
+    skills, seen = [], set()
+    for skill in clean_text(raw).split(","):
+        skill = skill.strip()
+        if skill and skill.lower() not in seen:
+            seen.add(skill.lower())
+            skills.append(skill)
+    return skills
+
+
+def job_id_from_link(job_link: str) -> str:
+    """Deterministic UUID for a job, so re-indexing overwrites instead of duplicating."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, job_link))
+
+
+# Document building
 def build_document(row: pd.Series) -> Document:
-    """Build formatted documents for each row."""
+    """Build an embeddable document plus filterable metadata for one job."""
+    title = row["job_title"]
+    description = row["job_summary"]
+    skills = parse_skills(row["job_skills"])
+    job_level = row["job level"]
+    work_type = row["job_type"].lower()
 
-    job_description = clean_html(row["Job Description"])
-    # Avoid hallucinated response
-    if len(job_description.strip()) < 50:
-        job_description = "No detailed description provided."
-
-    title = safe_value(row["Job Title"])
-    company = safe_value(row["Company Name"])
-    location = safe_value(row["Job Location"])
-    level = safe_value(row["Job Level"])
-    category = safe_value(row["Job Category"])
-
-    formatted_text = f"""
----
-Job Title: {title}
-Company: {company}
-Location: {location}
-Level: {level}
-Category: {category}
-
-Description:
-{job_description}
----
-    """
+    page_content = (
+        f"Job Title: {title}\n"
+        f"Company: {row['company']}\n"
+        f"Location: {row['job_location']}, {row['search_country']}\n"
+        f"Work Type: {work_type}\n"
+        f"Job Level: {job_level}\n"
+        f"Skills: {', '.join(skills) if skills else 'Not listed'}\n"
+        f"\nDescription:\n{description}"
+    )
 
     metadata = {
-        "id": safe_value(row["ID"]),
+        "id": job_id_from_link(row["job_link"]),
+        "job_link": row["job_link"],
         "title": title,
-        "company": company,
-        "location": location,
-        "level": level,
-        "category": category,
-        "publication_date": safe_value(row["Publication Date"]),
+        "company": row["company"],
+        "location": row["job_location"],
+        "country": row["search_country"],
+        "work_type": work_type,
+        "job_level": job_level,
+        "skills": skills,
     }
 
-    return Document(page_content=formatted_text, metadata=metadata)
+    return Document(page_content=page_content, metadata=metadata)
 
 
-def load_and_prepare_data(file_path: str) -> List[Document]:
-    """Load CSV file and prepare document for indexing."""
-
+def load_and_prepare_data(file_path: str) -> list[Document]:
+    """Load the CSV, clean and de-duplicate it, and build one Document per job."""
     df = pd.read_csv(file_path)
-    documents = []
 
-    for _, row in df.iterrows():
-        documents.append(build_document(row))
+    missing = set(EXPECTED_COLUMNS) - set(df.columns)
+    if missing:
+        raise ValueError(f"Dataset is missing expected columns: {sorted(missing)}")
+
+    total = len(df)
+    df = df[EXPECTED_COLUMNS].copy()
+    # Clean every cell in the table
+    for column in EXPECTED_COLUMNS:
+        df[column] = df[column].map(clean_text)
+
+    # Remove rows with no description
+    df = df[df["job_summary"] != ""]
+    no_description = total - len(df)
+
+    # Remove duplicate rows
+    before_dedup = len(df)
+    df = df.drop_duplicates(
+        subset=["job_title", "company", "job_summary"], keep="first"
+    )
+    duplicates = before_dedup - len(df)
+
+    documents = [build_document(row) for _, row in df.iterrows()]
+
+    logger.info(
+        "Loaded %d rows | dropped %d without description | removed %d duplicates | %d jobs kept",
+        total,
+        no_description,
+        duplicates,
+        len(documents),
+    )
 
     return documents
