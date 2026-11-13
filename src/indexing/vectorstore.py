@@ -60,7 +60,7 @@ def index_chunks(chunks: list[Document], client: QdrantClient | None = None) -> 
         "Indexing %d chunks into '%s'...", len(chunks), settings.qdrant_collection
     )
 
-    start = time.time()
+    start = time.perf_counter()
     for i in range(0, len(chunks), BATCH_SIZE):
         batch = chunks[i : i + BATCH_SIZE]
         texts = [chunk.page_content for chunk in batch]
@@ -91,5 +91,5 @@ def index_chunks(chunks: list[Document], client: QdrantClient | None = None) -> 
         done = min(i + BATCH_SIZE, len(chunks))
         if done % (BATCH_SIZE * 20) == 0 or done == len(chunks):
             logger.info(
-                "Indexed %d/%d chunks (%.0fs)", done, len(chunks), time.time() - start
+                "Indexed %d/%d chunks (%.0fs)", done, len(chunks), time.perf_counter() - start
             )

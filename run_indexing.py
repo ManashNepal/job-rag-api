@@ -13,7 +13,7 @@ logging.basicConfig(
 
 
 def main():
-    start = time.time()
+    start = time.perf_counter()
 
     logging.info("Loading documents...")
     documents = load_and_prepare_data(file_path="data/linkedin_job_postings.csv")
@@ -25,7 +25,7 @@ def main():
     logging.info("Storing in Qdrant...")
     index_chunks(chunks)
 
-    logging.info(f"Completed in {time.time() - start:.2f} seconds")
+    logging.info(f"Completed in {time.perf_counter() - start:.2f} seconds")
 
 
 if __name__ == "__main__":
