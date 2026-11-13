@@ -1,16 +1,34 @@
 from pydantic import BaseModel, Field
-from typing import List
 
 
+# Internal Claude response
+class JobMatch(BaseModel):
+    job_number: int = Field(
+        description="Number of the job in the context, e.g. 2 for [Job 2]"
+    )
+    summary: str = Field(description="2-3 sentences on what the role involves")
+    match_reason: str = Field(description="One sentence on how the job fits the query")
+
+
+class LLMJobMatches(BaseModel):
+    matches: list[JobMatch] = Field(description="Relevant jobs, most relevant first")
+
+
+# API response
 class Job(BaseModel):
-    title: str = Field(description="Job title or role name")
-    company: str = Field(description="Company offering the job")
-    location: str = Field(
-        description="Job location including the city and country if available"
-    )
-    summary: str = Field(
-        description="Short 2-3 sentence summary of the job responsibilities"
-    )
+    # From the job's data
+    title: str
+    company: str
+    location: str
+    country: str
+    work_type: str
+    job_level: str
+    job_link: str
+    # Written by Claude
+    summary: str
+    match_reason: str
+    # Reranker relevance score
+    score: float
 
 
 class JobQueryRequest(BaseModel):
@@ -18,6 +36,4 @@ class JobQueryRequest(BaseModel):
 
 
 class JobSearchResponse(BaseModel):
-    results: List[Job] = Field(
-        description="List of relevant jobs matching the user query"
-    )
+    results: list[Job] = Field(description="Relevant jobs, most relevant first")

@@ -1,99 +1,122 @@
-from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate
-import time
 import logging
+import time
+
+import anthropic
+from langchain_core.documents import Document
 
 from src.config import settings
-from src.rag.schemas import JobSearchResponse
-from src.rag.retriever import HybridRetriever
 from src.rag.reranker import Reranker
+from src.rag.retriever import HybridRetriever
+from src.rag.schemas import Job, JobSearchResponse, LLMJobMatches
+
+logger = logging.getLogger(__name__)
+
+SYSTEM_PROMPT = """You help people find jobs. You get a search query and numbered job postings \
+([Job 1], [Job 2], ...), each an excerpt of the full posting.
+
+Return the postings that are relevant to the query, most relevant first. Leave out postings \
+that don't fit; return an empty list if none do. For each one:
+- summary: 2-3 sentences on what the role involves (responsibilities, main technologies). \
+Skip company marketing.
+- match_reason: one sentence on how it matches the query, or where it falls short \
+(e.g. "Senior role, but the query asks for junior").
+
+Use only information from the postings."""
 
 
 class RAGService:
     """Service class implementing the RAG pipeline for job search."""
 
     def __init__(self):
-        """Initialize vector store, retriever, LLM, and prompt template."""
         self.retriever = HybridRetriever(top_k=settings.retriever_top_k)
         self.reranker = Reranker(top_k=settings.reranker_top_k)
+        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
-        base_llm = ChatGroq(
-            model=settings.groq_model,
-            temperature=0,
-            api_key=settings.groq_api_key,
-        )
-
-        self.llm = base_llm.with_structured_output(
-            schema=JobSearchResponse, strict=True
-        )
-
-        self.prompt = ChatPromptTemplate.from_template(
-            """
-You are an AI job search assistant.
-
-Use ONLY the provided job context to answer.
-
-Return the most relevant jobs for the user query.
-
-Rules:
-- Maximum 5 jobs
-- Do NOT invent information
-- If nothing relevant, return an empty list
-- Order results by relevance
-
-Summary Guidelines:
-- Write a clear and informative summary describing the overall role
-- Start with a descriptive phrase such as:
-  "The role involves", "This position focuses on", "The job centers on",
-  "The position involves", or a similar natural variation
-- Use only ONE opening phrase and avoid repeating similar phrases
-- Include the main responsibilities and purpose of the job
-- Focus on what the candidate will do and the type of work involved
-- If company information appears first, prioritize role details instead
-- Avoid generic company descriptions, workplace environment details, or marketing text
-- Keep the summary concise (2-3 sentences maximum)
-
-Context:
-{context}
-
-User Query:
-{query}
-"""
-        )
-
-    def query(self, user_query: str):
-        """
-        Execute the RAG pipeline:
-        retrieve relevant jobs, build context, invoke LLM, and return results.
-        """
-        start = time.time()
+    def query(self, user_query: str) -> JobSearchResponse:
+        """Retrieve and rerank jobs, ask LLM which ones match, and build the response."""
+        start = time.perf_counter()
         docs = self.retriever.search(user_query)
-        # Rerank documents
+        retrieval_time = time.perf_counter() - start
+
+        start_rerank = time.perf_counter()
         docs = self.reranker.rerank(user_query, docs)
-        retrieval_time = time.time() - start
+        rerank_time = time.perf_counter() - start_rerank
 
-        context = self.build_context(docs)
+        if not docs:
+            return JobSearchResponse(results=[])
 
-        messages = self.prompt.format_messages(
-            context=context,
-            query=user_query,
+        start_llm = time.perf_counter()
+        matches = self.find_matches(user_query, docs)
+        llm_time = time.perf_counter() - start_llm
+
+        logger.info(
+            "Retrieval: %.2fs | Rerank: %.2fs | LLM: %.2fs | Total: %.2fs",
+            retrieval_time,
+            rerank_time,
+            llm_time,
+            time.perf_counter() - start,
         )
 
-        start_llm = time.time()
-        response = self.llm.invoke(messages)
-        llm_time = time.time() - start_llm
+        return JobSearchResponse(results=self.build_results(matches, docs))
 
-        total_time = time.time() - start
-
-        logging.info(
-            f"Retrieval: {retrieval_time:.2f}s | "
-            f"LLM: {llm_time:.2f}s | "
-            f"Total: {total_time:.2f}s"
+    def find_matches(self, user_query: str, docs: list[Document]) -> LLMJobMatches:
+        """Ask LLM which of the numbered jobs match the query."""
+        response = self.client.beta.messages.parse(
+            model=settings.llm_model,
+            max_tokens=settings.llm_max_tokens,
+            system=SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"{self.build_context(docs)}\n\nSearch query: {user_query}",
+                }
+            ],
+            output_format=LLMJobMatches,
+            output_config={"effort": settings.llm_effort},
+            # If the model declines, retry on the fallback model
+            betas=["server-side-fallback-2026-07-01"],
+            fallbacks="default",
         )
 
-        return response
+        if response.stop_reason == "refusal":
+            logger.warning("LLM declined the request: %s", response.stop_details)
+            return LLMJobMatches(matches=[])
+        if response.stop_reason == "max_tokens":
+            raise RuntimeError("LLM response was cut off (max_tokens reached)")
 
-    def build_context(self, docs):
-        """Construct a compact text context from retrieved documents to send to the LLM."""
-        # Each doc is the job's best-matching chunk, which already starts with the job header.
-        return "\n\n".join(f"---\n{doc.page_content}\n---" for doc in docs)
+        return response.parsed_output
+
+    def build_context(self, docs: list[Document]) -> str:
+        """Number each job's best chunk so LLM can refer to it as [Job N]."""
+        return "\n\n".join(
+            f"[Job {number}]\n{doc.page_content}"
+            for number, doc in enumerate(docs, start=1)
+        )
+
+    def build_results(self, matches: LLMJobMatches, docs: list[Document]) -> list[Job]:
+        """Combine LLM's summaries with the job data from the index."""
+        results, seen = [], set()
+
+        for match in matches.matches:
+            # Ignore numbers that don't point to a job we sent or repeats
+            if not 1 <= match.job_number <= len(docs) or match.job_number in seen:
+                continue
+            seen.add(match.job_number)
+
+            metadata = docs[match.job_number - 1].metadata
+            results.append(
+                Job(
+                    title=metadata["title"],
+                    company=metadata["company"],
+                    location=metadata["location"],
+                    country=metadata["country"],
+                    work_type=metadata["work_type"],
+                    job_level=metadata["job_level"],
+                    job_link=metadata["job_link"],
+                    summary=match.summary,
+                    match_reason=match.match_reason,
+                    score=metadata["rerank_score"],
+                )
+            )
+
+        return results

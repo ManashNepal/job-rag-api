@@ -1,11 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
     # API keys
-    groq_api_key: str = Field(..., validation_alias="GROQ_API_KEY")
+    anthropic_api_key: str | None = None
     hf_token: str | None = None
     # Qdrant
     qdrant_url: str = "http://localhost:6333"
@@ -27,7 +26,9 @@ class Settings(BaseSettings):
     retriever_top_k: int = 30  # jobs passed to the reranker
     reranker_top_k: int = 5  # jobs passed to the LLM
     # LLM
-    groq_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "claude-sonnet-5-5"
+    llm_effort: str = "low"
+    llm_max_tokens: int = 8000  # covers thinking and the answer
 
 
 settings = Settings()
