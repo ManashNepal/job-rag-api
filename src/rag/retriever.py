@@ -1,44 +1,57 @@
-from pinecone import Pinecone
-from pinecone_text.sparse import BM25Encoder
-from langchain_classic.schema import Document
+from langchain_core.documents import Document
+from qdrant_client import QdrantClient, models
 
 from src.config import settings
-from src.indexing.embedder import get_embedding_model
+from src.indexing.embedder import get_dense_model, get_sparse_model
+from src.indexing.vectorstore import DENSE_VECTOR, SPARSE_VECTOR, get_qdrant_client
 
 
 class HybridRetriever:
-    """Hybrid retriever using Pinecone dense and sparse search."""
+    """Hybrid (dense and BM25) retriever over job chunks in Qdrant."""
 
-    def __init__(self, top_k: int):
+    def __init__(self, top_k: int, client: QdrantClient | None = None):
         self.top_k = top_k
-        # Pinecone
-        pc = Pinecone(api_key=settings.pinecone_api_key)
-        self.index = pc.Index(settings.pinecone_index_name)
-        # Embeddings
-        self.embedding_model = get_embedding_model()
-        # Load fitted BM25
-        self.bm25 = BM25Encoder().load("bm25.pkl")
+        self.client = client or get_qdrant_client()
+        self.dense_model = get_dense_model()
+        self.sparse_model = get_sparse_model()
 
-    def search(self, query: str):
-        dense_vector = self.embedding_model.embed_query(query)
-        sparse_vector = self.bm25.encode_queries(query)
+    def search(self, query: str) -> list[Document]:
+        """Return the best-matching chunk for each of the top_k jobs."""
+        dense_vector = next(self.dense_model.query_embed(query)).tolist()
+        sparse = next(self.sparse_model.query_embed(query))
+        sparse_vector = models.SparseVector(
+            indices=sparse.indices.tolist(), values=sparse.values.tolist()
+        )
 
-        results = self.index.query(
-            vector=dense_vector,
-            sparse_vector=sparse_vector,
-            top_k=self.top_k,
-            include_metadata=True,
+        result = self.client.query_points_groups(
+            collection_name=settings.qdrant_collection,
+            # Run both searches, then merge with Reciprocal Rank Fusion
+            prefetch=[
+                models.Prefetch(
+                    query=dense_vector,
+                    using=DENSE_VECTOR,
+                    limit=settings.prefetch_limit,
+                ),
+                models.Prefetch(
+                    query=sparse_vector,
+                    using=SPARSE_VECTOR,
+                    limit=settings.prefetch_limit,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            # One best-scoring chunk per job
+            group_by="job_id",
+            group_size=1,
+            limit=self.top_k,
+            with_payload=True,
         )
 
         documents = []
-
-        for match in results["matches"]:
-            metadata = match["metadata"] or {}
-            text = metadata.get("text", "")
-            doc = Document(
-                page_content=text,
-                metadata=metadata,
-            )
-            documents.append(doc)
+        for group in result.groups:
+            hit = group.hits[0]
+            payload = dict(hit.payload)
+            text = payload.pop("text")
+            payload["retrieval_score"] = hit.score
+            documents.append(Document(page_content=text, metadata=payload))
 
         return documents

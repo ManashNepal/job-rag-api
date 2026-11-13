@@ -50,25 +50,16 @@ def job_id_from_link(job_link: str) -> str:
 
 # Document building
 def build_document(row: pd.Series) -> Document:
-    """Build an embeddable document plus filterable metadata for one job."""
+    """Build one document per job: the description as content, job fields as metadata."""
+
     title = row["job_title"]
     description = row["job_summary"]
     skills = parse_skills(row["job_skills"])
     job_level = row["job level"]
     work_type = row["job_type"].lower()
 
-    page_content = (
-        f"Job Title: {title}\n"
-        f"Company: {row['company']}\n"
-        f"Location: {row['job_location']}, {row['search_country']}\n"
-        f"Work Type: {work_type}\n"
-        f"Job Level: {job_level}\n"
-        f"Skills: {', '.join(skills) if skills else 'Not listed'}\n"
-        f"\nDescription:\n{description}"
-    )
-
     metadata = {
-        "id": job_id_from_link(row["job_link"]),
+        "job_id": job_id_from_link(row["job_link"]),
         "job_link": row["job_link"],
         "title": title,
         "company": row["company"],
@@ -79,7 +70,7 @@ def build_document(row: pd.Series) -> Document:
         "skills": skills,
     }
 
-    return Document(page_content=page_content, metadata=metadata)
+    return Document(page_content=description, metadata=metadata)
 
 
 def load_and_prepare_data(file_path: str) -> list[Document]:

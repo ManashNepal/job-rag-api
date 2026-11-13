@@ -1,23 +1,25 @@
-from sentence_transformers import CrossEncoder
-from src.config import settings
+from langchain_core.documents import Document
+
+from src.indexing.embedder import get_reranker_model
 
 
 class Reranker:
-    """Simple cross-encoder reranker."""
+    """Cross-encoder reranker."""
 
     def __init__(self, top_k: int):
         self.top_k = top_k
-        self.model = CrossEncoder(settings.reranker_model)
+        self.model = get_reranker_model()
 
-    def rerank(self, query: str, documents):
+    def rerank(self, query: str, documents: list[Document]) -> list[Document]:
         if not documents:
             return []
-        pairs = [(query, doc.page_content) for doc in documents]
-        scores = self.model.predict(pairs)
-        scored_docs = list(zip(documents, scores))
 
-        # Sort by score descending
-        scored_docs.sort(key=lambda x: x[1], reverse=True)
-        reranked_docs = [doc for doc, _ in scored_docs[: self.top_k]]
+        scores = self.model.rerank(query, [doc.page_content for doc in documents])
+        scored_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
+
+        reranked_docs = []
+        for doc, score in scored_docs[: self.top_k]:
+            doc.metadata["rerank_score"] = float(score)
+            reranked_docs.append(doc)
 
         return reranked_docs

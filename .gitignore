@@ -8,4 +8,4 @@ data/
 
 .env
 
-bm25.pkl
+qdrant_storage/

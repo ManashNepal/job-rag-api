@@ -95,36 +95,5 @@ User Query:
 
     def build_context(self, docs):
         """Construct a compact text context from retrieved documents to send to the LLM."""
-        context_parts = []
-
-        if not docs:
-            return ""
-
-        for doc in docs:
-            metadata = doc.metadata or {}
-            title = metadata.get("title", "N/A")
-            company = metadata.get("company", "N/A")
-            location = metadata.get("location", "N/A")
-
-            # Extract only description portion
-            content = doc.page_content
-
-            if "Description:" in content:
-                description = content.split("Description:", 1)[-1].strip()
-            else:
-                description = content
-
-            description = description[:600]  # shorter gives faster response
-
-            text = f"""
----
-Job Title: {title}
-Company: {company}
-Location: {location}
-Description: {description}
----
-"""
-
-            context_parts.append(text)
-
-        return "\n\n".join(context_parts)
+        # Each doc is the job's best-matching chunk, which already starts with the job header.
+        return "\n\n".join(f"---\n{doc.page_content}\n---" for doc in docs)
