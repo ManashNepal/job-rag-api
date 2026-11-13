@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     dense_model: str = "BAAI/bge-small-en-v1.5"
     sparse_model: str = "Qdrant/bm25"
     reranker_model: str = "Xenova/ms-marco-MiniLM-L-6-v2"
+    # Texts per model call. Larger batches use much more memory
+    model_batch_size: int = 16
     # Chunking (in tokens)
     max_chunk_tokens: int = 512  # bge-small and the reranker limit
     chunk_size: int = 256  # description tokens per chunk

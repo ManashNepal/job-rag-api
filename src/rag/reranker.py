@@ -1,5 +1,6 @@
 from langchain_core.documents import Document
 
+from src.config import settings
 from src.indexing.embedder import get_reranker_model
 
 
@@ -14,7 +15,11 @@ class Reranker:
         if not documents:
             return []
 
-        scores = self.model.rerank(query, [doc.page_content for doc in documents])
+        scores = self.model.rerank(
+            query,
+            [doc.page_content for doc in documents],
+            batch_size=settings.model_batch_size,
+        )
         scored_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
 
         reranked_docs = []

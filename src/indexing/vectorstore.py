@@ -65,8 +65,12 @@ def index_chunks(chunks: list[Document], client: QdrantClient | None = None) -> 
         batch = chunks[i : i + BATCH_SIZE]
         texts = [chunk.page_content for chunk in batch]
 
-        dense_vectors = dense_model.passage_embed(texts)
-        sparse_vectors = sparse_model.passage_embed(texts)
+        dense_vectors = dense_model.passage_embed(
+            texts, batch_size=settings.model_batch_size
+        )
+        sparse_vectors = sparse_model.passage_embed(
+            texts, batch_size=settings.model_batch_size
+        )
 
         points = [
             models.PointStruct(
