@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -37,6 +38,12 @@ class Settings(BaseSettings):
     min_filtered_results: int = (
         5  # if fewer jobs than this, search again without filters
     )
+
+    @field_validator("anthropic_api_key", "hf_token", "qdrant_api_key", mode="before")
+    @classmethod
+    def empty_to_none(cls, value):
+        """Treat an empty key in .env as no key."""
+        return value or None
 
 
 settings = Settings()
