@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.config import settings
 from src.indexing.preprocess import SENIORITY_LEVELS
@@ -62,7 +62,9 @@ class Job(BaseModel):
 
 
 class JobQueryRequest(BaseModel):
-    query: str = Field(description="User job search query")
+    model_config = ConfigDict(str_strip_whitespace=True)  # "   " counts as empty
+
+    query: str = Field(min_length=1, max_length=500, description="User job search query")
 
 
 class JobSearchResponse(BaseModel):
