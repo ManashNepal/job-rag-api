@@ -2,5 +2,10 @@ __pycache__/
 .env
 .venv/
 data/
+qdrant_storage/
 .git/
 .gitignore
+.pre-commit-config.yaml
+README.md
+*.log
+*.patch

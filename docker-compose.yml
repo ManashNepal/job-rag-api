@@ -5,3 +5,35 @@ services:
       - "6333:6333"
     volumes:
       - ./qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+
+  api:
+    build: .
+    image: job-rag-api:latest
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Containers reach each other by service name
+      QDRANT_URL: http://qdrant:6333
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  # Builds the index. Runs only when asked:
+  #   docker compose --profile index run --rm indexer
+  indexer:
+    image: job-rag-api:latest
+    profiles: ["index"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      QDRANT_URL: http://qdrant:6333
+    volumes:
+      - ./data:/app/data:ro
+    command: ["python", "run_indexing.py"]
+    depends_on:
+      - qdrant
