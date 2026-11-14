@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 DENSE_VECTOR = "dense"
 SPARSE_VECTOR = "bm25"
 # Payload fields indexed for filtering and grouping
-KEYWORD_FIELDS = ["job_id", "country", "work_type", "job_level", "skills"]
+KEYWORD_FIELDS = ["job_id", "country", "work_type", "job_level", "seniority", "skills"]
 BATCH_SIZE = 128
 
 

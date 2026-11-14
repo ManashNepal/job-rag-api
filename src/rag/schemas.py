@@ -1,4 +1,33 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+from src.config import settings
+from src.indexing.preprocess import SENIORITY_LEVELS
+
+# Allowed filter values
+WorkType = Literal["remote", "hybrid", "onsite"]
+Country = Literal[tuple(settings.countries)]
+Seniority = Literal[SENIORITY_LEVELS]
+
+
+# Filters extracted from the query
+class QueryFilters(BaseModel):
+    work_type: WorkType | None = Field(
+        default=None, description="Remote, hybrid or onsite, if the query asks for one"
+    )
+    country: Country | None = Field(  # type: ignore
+        default=None,
+        description="Country the jobs should be in, if the query names one",
+    )
+    seniority: Seniority | None = Field(  # type: ignore
+        default=None, description="Experience level, if the query asks for one"
+    )
+
+    def is_empty(self) -> bool:
+        return (
+            self.work_type is None and self.country is None and self.seniority is None
+        )
 
 
 # Internal Claude response
@@ -23,6 +52,7 @@ class Job(BaseModel):
     country: str
     work_type: str
     job_level: str
+    seniority: str
     job_link: str
     # Written by Claude
     summary: str
@@ -36,4 +66,11 @@ class JobQueryRequest(BaseModel):
 
 
 class JobSearchResponse(BaseModel):
+    filters: QueryFilters = Field(
+        default_factory=QueryFilters, description="Filters understood from the query"
+    )
+    filters_relaxed: bool = Field(
+        default=False,
+        description="True if too few jobs matched and filters were dropped",
+    )
     results: list[Job] = Field(description="Relevant jobs, most relevant first")

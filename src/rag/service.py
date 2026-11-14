@@ -5,9 +5,10 @@ import anthropic
 from langchain_core.documents import Document
 
 from src.config import settings
+from src.rag.query_parser import QueryParser
 from src.rag.reranker import Reranker
 from src.rag.retriever import HybridRetriever
-from src.rag.schemas import Job, JobSearchResponse, LLMJobMatches
+from src.rag.schemas import Job, JobSearchResponse, LLMJobMatches, QueryFilters
 
 logger = logging.getLogger(__name__)
 
@@ -31,33 +32,66 @@ class RAGService:
         self.retriever = HybridRetriever(top_k=settings.retriever_top_k)
         self.reranker = Reranker(top_k=settings.reranker_top_k)
         self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self.query_parser = QueryParser(self.client)
 
     def query(self, user_query: str) -> JobSearchResponse:
         """Retrieve and rerank jobs, ask LLM which ones match, and build the response."""
         start = time.perf_counter()
-        docs = self.retriever.search(user_query)
-        retrieval_time = time.perf_counter() - start
+        filters = self.query_parser.parse(user_query)
+        filter_time = time.perf_counter() - start
+
+        start_retrieval = time.perf_counter()
+        docs, filters_relaxed = self.retrieve(user_query, filters)
+        retrieval_time = time.perf_counter() - start_retrieval
 
         start_rerank = time.perf_counter()
         docs = self.reranker.rerank(user_query, docs)
         rerank_time = time.perf_counter() - start_rerank
 
         if not docs:
-            return JobSearchResponse(results=[])
+            return JobSearchResponse(
+                filters=filters, filters_relaxed=filters_relaxed, results=[]
+            )
 
         start_llm = time.perf_counter()
         matches = self.find_matches(user_query, docs)
         llm_time = time.perf_counter() - start_llm
 
         logger.info(
-            "Retrieval: %.2fs | Rerank: %.2fs | LLM: %.2fs | Total: %.2fs",
+            "Filters: %.2fs | Retrieval: %.2fs | Rerank: %.2fs | LLM: %.2fs | Total: %.2fs",
+            filter_time,
             retrieval_time,
             rerank_time,
             llm_time,
             time.perf_counter() - start,
         )
 
-        return JobSearchResponse(results=self.build_results(matches, docs))
+        return JobSearchResponse(
+            filters=filters,
+            filters_relaxed=filters_relaxed,
+            results=self.build_results(matches, docs),
+        )
+
+    def retrieve(
+        self, user_query: str, filters: QueryFilters
+    ) -> tuple[list[Document], bool]:
+        """Search with the filters; if too few jobs match, search again without them.
+
+        Returns the documents and whether the filters were dropped.
+        """
+        if filters.is_empty():
+            return self.retriever.search(user_query), False
+
+        docs = self.retriever.search(user_query, filters)
+        if len(docs) >= settings.min_filtered_results:
+            return docs, False
+
+        logger.info(
+            "Only %d jobs matched filters %s, searching without filters",
+            len(docs),
+            filters.model_dump(exclude_none=True),
+        )
+        return self.retriever.search(user_query), True
 
     def find_matches(self, user_query: str, docs: list[Document]) -> LLMJobMatches:
         """Ask LLM which of the numbered jobs match the query."""
@@ -112,6 +146,7 @@ class RAGService:
                     country=metadata["country"],
                     work_type=metadata["work_type"],
                     job_level=metadata["job_level"],
+                    seniority=metadata.get("seniority", "unspecified"),
                     job_link=metadata["job_link"],
                     summary=match.summary,
                     match_reason=match.match_reason,

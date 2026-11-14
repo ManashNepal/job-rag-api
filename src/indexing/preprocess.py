@@ -19,6 +19,30 @@ EXPECTED_COLUMNS = [
     "job_skills",
 ]
 
+# Seniority from the job title. Checked in order, the first match wins
+SENIORITY_LEVELS = ("intern", "junior", "mid", "senior")
+_ROLE = r"\b(engineer|eng|developer|programmer)"
+SENIORITY_RULES = [
+    ("intern", re.compile(r"\b(intern|internship|co-?op)\b")),
+    ("junior", re.compile(r"\b(junior|jr|entry[- ]level|graduate|grad)\b")),
+    (
+        "senior",
+        re.compile(
+            rf"\b(senior|sr|lead|staff|principal|manager|director|iii|iv)\b|{_ROLE}\s*(3|4)\b"
+        ),
+    ),
+    ("mid", re.compile(rf"\b(mid|mid-level|ii)\b|{_ROLE}\s*2\b")),
+]
+
+
+def seniority_from_title(title: str) -> str:
+    """Seniority level from title keywords, or "unspecified" if the title has none."""
+    normalized = title.lower().replace(".", " ")
+    for level, pattern in SENIORITY_RULES:
+        if pattern.search(normalized):
+            return level
+    return "unspecified"
+
 
 # Field cleaning
 def clean_text(value) -> str:
@@ -67,6 +91,7 @@ def build_document(row: pd.Series) -> Document:
         "country": row["search_country"],
         "work_type": work_type,
         "job_level": job_level,
+        "seniority": seniority_from_title(title),
         "skills": skills,
     }
 

@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     llm_model: str = "claude-sonnet-5-5"
     llm_effort: str = "low"
     llm_max_tokens: int = 8000  # covers thinking and the answer
+    # Query filters
+    filter_model: str = "claude-haiku-5-5"
+    filter_effort: str = "low"
+    filter_max_tokens: int = 2000
+    countries: list[str] = ["United States", "United Kingdom", "Canada", "Australia"]
+    min_filtered_results: int = (
+        5  # if fewer jobs than this, search again without filters
+    )
 
 
 settings = Settings()
