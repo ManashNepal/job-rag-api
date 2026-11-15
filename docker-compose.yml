@@ -26,6 +26,7 @@ services:
   # Builds the index. Runs only when asked:
   #   docker compose --profile index run --rm indexer
   indexer:
+    build: .
     image: job-rag-api:latest
     profiles: ["index"]
     env_file:
