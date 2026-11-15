@@ -1,6 +1,7 @@
 import logging
 
 import anthropic
+from langfuse import get_client, observe
 
 from src.config import settings
 from src.rag.schemas import QueryFilters
@@ -25,8 +26,10 @@ class QueryParser:
     def __init__(self, client: anthropic.Anthropic):
         self.client = client
 
+    @observe(name="extract-filters", capture_input=False, capture_output=False)
     def parse(self, query: str) -> QueryFilters:
         """Return the filters in the query. Any failure means no filters, so search still works."""
+        langfuse = get_client()
         try:
             response = self.client.messages.parse(
                 model=settings.filter_model,
@@ -38,12 +41,24 @@ class QueryParser:
             )
         except anthropic.APIError as e:
             logger.warning("Filter extraction failed, searching without filters: %s", e)
+            langfuse.update_current_span(level="ERROR", status_message=str(e))
             return QueryFilters()
+
+        langfuse.update_current_span(
+            input={"query": query},
+            output=(
+                response.parsed_output.model_dump() if response.parsed_output else None
+            ),
+            metadata={"model": response.model, "stop_reason": response.stop_reason},
+        )
 
         if response.stop_reason != "end_turn" or response.parsed_output is None:
             logger.warning(
                 "Filter extraction stopped (%s), searching without filters",
                 response.stop_reason,
+            )
+            langfuse.update_current_span(
+                level="WARNING", status_message=f"Stopped: {response.stop_reason}"
             )
             return QueryFilters()
 

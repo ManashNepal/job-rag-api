@@ -7,6 +7,12 @@ class Settings(BaseSettings):
     # API keys
     anthropic_api_key: str | None = None
     hf_token: str | None = None
+    # Langfuse tracing
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: str | None = None
+    langfuse_base_url: str = "https://cloud.langfuse.com"
+    app_environment: str = "development"  # shown in Langfuse to tell traces apart
+    trace_llm_content: bool = True  # include prompts and responses in LLM call traces
     # Qdrant
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None  # only needed for Qdrant Cloud
@@ -39,7 +45,14 @@ class Settings(BaseSettings):
         5  # if fewer jobs than this, search again without filters
     )
 
-    @field_validator("anthropic_api_key", "hf_token", "qdrant_api_key", mode="before")
+    @field_validator(
+        "anthropic_api_key",
+        "hf_token",
+        "qdrant_api_key",
+        "langfuse_public_key",
+        "langfuse_secret_key",
+        mode="before",
+    )
     @classmethod
     def empty_to_none(cls, value):
         """Treat an empty key in .env as no key."""

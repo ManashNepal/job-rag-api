@@ -16,6 +16,7 @@ services:
     environment:
       # Containers reach each other by service name
       QDRANT_URL: http://qdrant:6333
+      APP_ENVIRONMENT: docker
     ports:
       - "8000:8000"
     depends_on:
