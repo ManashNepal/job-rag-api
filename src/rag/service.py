@@ -6,6 +6,7 @@ from langchain_core.documents import Document
 from langfuse import get_client, observe, propagate_attributes
 
 from src.config import settings
+from src.rag.cache import ResultCache
 from src.rag.query_parser import QueryParser
 from src.rag.reranker import Reranker
 from src.rag.retriever import HybridRetriever
@@ -64,10 +65,26 @@ class RAGService:
             },
         )
         self.query_parser = QueryParser(self.client)
+        self.cache = ResultCache()
 
     @observe(name="job-search", capture_input=False, capture_output=False)
     def query(self, user_query: str) -> JobSearchResponse:
-        """Run the search pipeline; traced in Langfuse as one "job-search" trace."""
+        """Return a cached answer if there is one; otherwise run the pipeline and cache it.
+
+        Traced in Langfuse as one "job-search" trace.
+        """
+        langfuse = get_client()
+        cached = self.cache.get(user_query)
+        if cached is not None:
+            logger.info("Cache hit for query: %s", user_query)
+            cached.cached = True
+            langfuse.update_current_span(
+                input={"query": user_query},
+                output=cached.model_dump(),
+                metadata={"cache_hit": True},
+            )
+            return cached
+
         with propagate_attributes(
             tags=["job-search"],
             metadata={
@@ -76,8 +93,11 @@ class RAGService:
             },
         ):
             response = self.run_pipeline(user_query)
-        get_client().update_current_span(
-            input={"query": user_query}, output=response.model_dump()
+        self.cache.set(user_query, response)
+        langfuse.update_current_span(
+            input={"query": user_query},
+            output=response.model_dump(),
+            metadata={"cache_hit": False},
         )
         return response
 
