@@ -40,7 +40,14 @@ def health(request: Request):
             status_code=503,
             detail={"status": "unavailable", "qdrant": "collection missing"},
         )
-    return {"status": "ok", "qdrant": "ok"}
+
+    # Cache is optional
+    cache = request.app.state.rag_service.cache
+    if not cache.enabled:
+        redis_status = "disabled"
+    else:
+        redis_status = "ok" if cache.ping() else "unavailable"
+    return {"status": "ok", "qdrant": "ok", "redis": redis_status}
 
 
 @router.post("/search", response_model=JobSearchResponse)

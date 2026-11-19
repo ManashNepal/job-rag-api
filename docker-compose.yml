@@ -7,6 +7,19 @@ services:
       - ./qdrant_storage:/qdrant/storage
     restart: unless-stopped
 
+  # Search result cache - in memory only, oldest entries evicted when full
+  redis:
+    image: redis:8.10.3-alpine
+    command: [ "redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no" ]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
   api:
     build: .
     image: job-rag-api:latest
@@ -16,26 +29,29 @@ services:
     environment:
       # Containers reach each other by service name
       QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
       APP_ENVIRONMENT: docker
     ports:
       - "8000:8000"
     depends_on:
       - qdrant
+      - redis
     restart: unless-stopped
 
   # Builds the index. Runs only when asked:
-  #   docker compose --profile index run --rm indexer
+  # docker compose --profile index run --rm indexer
   indexer:
     build: .
     image: job-rag-api:latest
-    profiles: ["index"]
+    profiles: [ "index" ]
     env_file:
       - path: .env
         required: false
     environment:
       QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0 # to clear cached searches after re-indexing
     volumes:
       - ./data:/app/data:ro
-    command: ["python", "run_indexing.py"]
+    command: [ "python", "run_indexing.py" ]
     depends_on:
       - qdrant

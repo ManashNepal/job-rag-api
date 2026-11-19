@@ -64,7 +64,9 @@ class Job(BaseModel):
 class JobQueryRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)  # "   " counts as empty
 
-    query: str = Field(min_length=1, max_length=500, description="User job search query")
+    query: str = Field(
+        min_length=1, max_length=500, description="User job search query"
+    )
 
 
 class JobSearchResponse(BaseModel):
@@ -76,3 +78,6 @@ class JobSearchResponse(BaseModel):
         description="True if too few jobs matched and filters were dropped",
     )
     results: list[Job] = Field(description="Relevant jobs, most relevant first")
+    cached: bool = Field(
+        default=False, description="True if this answer came from the result cache"
+    )

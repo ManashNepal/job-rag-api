@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     min_filtered_results: int = (
         5  # if fewer jobs than this, search again without filters
     )
+    # Search result cache (off when REDIS_URL is not set)
+    redis_url: str | None = None
+    cache_ttl_seconds: int = 3600
 
     @field_validator(
         "anthropic_api_key",
@@ -51,6 +54,7 @@ class Settings(BaseSettings):
         "qdrant_api_key",
         "langfuse_public_key",
         "langfuse_secret_key",
+        "redis_url",
         mode="before",
     )
     @classmethod

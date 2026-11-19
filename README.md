@@ -12,9 +12,9 @@ query ──► Claude Haiku: extract filters (remote/hybrid/onsite, country, se
       ──► JSON response (job details come straight from the data, not the LLM)
 ```
 
-Every request can be traced step by step in [Langfuse](https://langfuse.com).
+Repeated searches are answered instantly from a Redis cache, and every request can be traced step by step in [Langfuse](https://langfuse.com).
 
-**Stack:** FastAPI, Qdrant, FastEmbed, Anthropic SDK, Langfuse, Docker
+**Stack:** FastAPI, Qdrant, FastEmbed, Anthropic SDK, Redis, Langfuse, Docker
 
 ## Run it on your machine
 
@@ -93,7 +93,8 @@ Or open **http://localhost:8000/docs** and try `POST /search` in the browser.
       "match_reason": "Senior, hybrid role in Edinburgh, UK with Python/Django as a core technology.",
       "score": 5.12
     }
-  ]
+  ],
+  "cached": false
 }
 ```
 
@@ -103,6 +104,7 @@ Or open **http://localhost:8000/docs** and try `POST /search` in the browser.
 | `filters_relaxed` | `true` if too few jobs matched, so the search ran without filters |
 | `summary`, `match_reason` | Written by the LLM from the job posting |
 | `score` | Reranker relevance score (higher is better) |
+| `cached` | `true` if the answer came from the Redis cache |
 
 ## Dataset
 

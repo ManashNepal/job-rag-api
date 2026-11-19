@@ -17,6 +17,7 @@ dependencies = [
     "uvicorn>=0.41.0",
     "fastembed>=0.9.1",
     "langfuse>=5.2.0",
+    "redis>=8.1.0",
 ]
 
 [dependency-groups]
