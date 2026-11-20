@@ -22,5 +22,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "click>=8.3.3",
+    "deepeval>=4.3.4",
     "pre-commit>=4.5.1",
 ]

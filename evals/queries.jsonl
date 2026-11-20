@@ -1,0 +1,55 @@
+{"id": "s01", "query": "python developer with django and postgresql", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s02", "query": "java spring boot microservices engineer", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s03", "query": "golang backend engineer with kafka", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s04", "query": "rust systems programmer", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s05", "query": "react typescript frontend developer", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s06", "query": "c# .net core api developer", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s07", "query": "kubernetes and terraform platform engineer", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s08", "query": "node.js engineer with mongodb", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s09", "query": "scala engineer building spark data pipelines", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s10", "query": "ios developer swift", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s11", "query": "android kotlin developer", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "s12", "query": "c++ low latency trading systems", "tags": ["skill"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r01", "query": "embedded firmware engineer for medical devices", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r02", "query": "devops engineer ci/cd jenkins", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r03", "query": "site reliability engineer for production systems", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r04", "query": "machine learning engineer pytorch", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r05", "query": "data engineer building etl pipelines", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r06", "query": "software development engineer in test, selenium automation", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r07", "query": "computer vision engineer", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "r08", "query": "game developer unity c#", "tags": ["role"], "expected_filters": {}, "expect_relevant": true}
+{"id": "f01", "query": "remote software engineer", "tags": ["filter"], "expected_filters": {"work_type": "remote"}, "expect_relevant": true}
+{"id": "f02", "query": "software developer jobs in Canada", "tags": ["filter"], "expected_filters": {"country": "Canada"}, "expect_relevant": true}
+{"id": "f03", "query": "hybrid full stack developer in London", "tags": ["filter"], "expected_filters": {"work_type": "hybrid", "country": "United Kingdom"}, "expect_relevant": true}
+{"id": "f04", "query": "onsite embedded engineer in Texas", "tags": ["filter"], "expected_filters": {"work_type": "onsite", "country": "United States"}, "expect_relevant": true}
+{"id": "f05", "query": "remote backend developer UK", "tags": ["filter"], "expected_filters": {"work_type": "remote", "country": "United Kingdom"}, "expect_relevant": true}
+{"id": "f06", "query": "software engineer in Sydney", "tags": ["filter"], "expected_filters": {"country": "Australia"}, "expect_relevant": true}
+{"id": "f07", "query": "work from home java developer", "tags": ["filter"], "expected_filters": {"work_type": "remote"}, "expect_relevant": true}
+{"id": "f08", "query": "in office .net developer in Toronto", "tags": ["filter"], "expected_filters": {"work_type": "onsite", "country": "Canada"}, "expect_relevant": true}
+{"id": "l01", "query": "junior software developer", "tags": ["seniority"], "expected_filters": {"seniority": "junior"}, "expect_relevant": true}
+{"id": "l02", "query": "entry level python developer", "tags": ["seniority"], "expected_filters": {"seniority": "junior"}, "expect_relevant": true}
+{"id": "l03", "query": "junior react frontend developer", "tags": ["seniority"], "expected_filters": {"seniority": "junior"}, "expect_relevant": true}
+{"id": "l04", "query": "software engineering internship summer 2024", "tags": ["seniority"], "expected_filters": {"seniority": "intern"}, "expect_relevant": true}
+{"id": "l05", "query": "new grad software engineer", "tags": ["seniority"], "expected_filters": {"seniority": "junior"}, "expect_relevant": true}
+{"id": "l06", "query": "mid-level java developer", "tags": ["seniority"], "expected_filters": {"seniority": "mid"}, "expect_relevant": true}
+{"id": "l07", "query": "software engineer II backend", "tags": ["seniority"], "expected_filters": {"seniority": "mid"}, "expect_relevant": true}
+{"id": "l08", "query": "staff engineer distributed systems", "tags": ["seniority"], "expected_filters": {"seniority": "senior"}, "expect_relevant": true}
+{"id": "c01", "query": "remote junior react jobs in Canada", "tags": ["combined"], "expected_filters": {"work_type": "remote", "country": "Canada", "seniority": "junior"}, "expect_relevant": true}
+{"id": "c02", "query": "senior python engineer UK hybrid", "tags": ["combined"], "expected_filters": {"work_type": "hybrid", "country": "United Kingdom", "seniority": "senior"}, "expect_relevant": true}
+{"id": "c03", "query": "software engineering intern in the US", "tags": ["combined"], "expected_filters": {"country": "United States", "seniority": "intern"}, "expect_relevant": true}
+{"id": "c04", "query": "remote senior golang engineer USA", "tags": ["combined"], "expected_filters": {"work_type": "remote", "country": "United States", "seniority": "senior"}, "expect_relevant": true}
+{"id": "c05", "query": "lead .net developer hybrid in Australia", "tags": ["combined"], "expected_filters": {"work_type": "hybrid", "country": "Australia", "seniority": "senior"}, "expect_relevant": true}
+{"id": "v01", "query": "I want to build APIs and work with cloud infrastructure", "tags": ["vague"], "expected_filters": {}, "expect_relevant": true}
+{"id": "v02", "query": "jobs where I can work on AI products", "tags": ["vague"], "expected_filters": {}, "expect_relevant": true}
+{"id": "v03", "query": "something in fintech for a backend engineer", "tags": ["vague"], "expected_filters": {}, "expect_relevant": true}
+{"id": "v04", "query": "software jobs in healthcare", "tags": ["vague"], "expected_filters": {}, "expect_relevant": true}
+{"id": "v05", "query": "a role where I can mentor developers and still write code", "tags": ["vague"], "expected_filters": {}, "expect_relevant": true}
+{"id": "n01", "query": "cobol mainframe developer", "tags": ["niche"], "expected_filters": {}, "expect_relevant": true}
+{"id": "n02", "query": "fpga verilog engineer", "tags": ["niche"], "expected_filters": {}, "expect_relevant": true}
+{"id": "n03", "query": "salesforce apex developer", "tags": ["niche"], "expected_filters": {}, "expect_relevant": true}
+{"id": "n04", "query": "blockchain smart contract developer", "tags": ["niche"], "expected_filters": {}, "expect_relevant": true}
+{"id": "n05", "query": "software engineer with active security clearance", "tags": ["niche"], "expected_filters": {}, "expect_relevant": true}
+{"id": "x01", "query": "registered nurse night shift", "tags": ["negative"], "expected_filters": {}, "expect_relevant": false}
+{"id": "x02", "query": "accountant CPA for tax season", "tags": ["negative"], "expected_filters": {}, "expect_relevant": false}
+{"id": "x03", "query": "high school math teacher", "tags": ["negative"], "expected_filters": {}, "expect_relevant": false}
+{"id": "x04", "query": "truck driver CDL class A", "tags": ["negative"], "expected_filters": {}, "expect_relevant": false}

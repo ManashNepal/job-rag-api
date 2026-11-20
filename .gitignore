@@ -8,3 +8,6 @@ data/
 .env
 
 qdrant_storage/
+
+evals/results/
+.deepeval/
